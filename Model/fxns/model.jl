@@ -2,7 +2,7 @@
 #given initial condition u 
 function h(du, u, p, t)
     # Failsafe: if we are in the wrong regime, the solution 
-    # will diverge. This might cause the program to halt, 
+    # will diverge. This might cause the program to halt,  
     # so we throw an error if any vessel volume is too large
     if  sum(abs.(u) .> 6) > 0 
         println(t)

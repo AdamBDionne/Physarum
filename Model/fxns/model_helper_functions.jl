@@ -92,7 +92,7 @@ function graph_precomputation(g, avg_radii, Len)
     in_neighbors = []
 
     for i=1:Nv
-        # pos neighboring edges
+        # pos neighboring edges 
         push!(out_neighbors, findall(edgelist[:,1] .== i))
         push!(in_neighbors, findall(edgelist[:,2] .== i))
     end

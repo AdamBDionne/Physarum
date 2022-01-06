@@ -5,7 +5,7 @@ using LightGraphs
 using DifferentialEquations
 using Plots
 
-# Helper code
+# Helper code 
 include("fxns/model.jl")
 include("fxns/model_helper_functions.jl")
 
