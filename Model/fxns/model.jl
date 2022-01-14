@@ -4,11 +4,10 @@ function h(du, u, p, t)
     # Failsafe: if we are in the wrong regime, the solution 
     # will diverge. This might cause the program to halt,  
     # so we throw an error if any vessel volume is too large
-    if  sum(abs.(u) .> 6) > 0 
+    if  sum(abs.(u) .> 5*maximum(V0)) > 0 
         println(t)
         throw(string("Solution diverges at " ,t))
     end
-  
 
     V = u[1:Ne] #volume 
     Vdot = du[1:Ne] #change in volume 
@@ -44,3 +43,20 @@ function h(du, u, p, t)
     du .= [Vdot; Cdot]
 end
 
+#find flows given current volumes and concentrations
+function findFlows(u)
+    V = u[1:Ne] #volume 
+    C = u[Ne+1:2Ne] #solute amount 
+
+    ϵ = (V .- V0)./V0 #percent change from equilibrium volume
+
+    #Volume dynamics
+                  #  restoring force      nonlinear fudge                 actomyosin contractions 
+    r = Mq_inv \ (-(k .*ϵ .*V0) .- (kappa .* V0 .*(ϵ).^3) .- (surface_area .* α .*(C./C0).*(1 .- ϵ/ϵ_s)))
+    μ = sum(r) / sum_Minv1
+    Vdot = r .- (Minv1 .* μ)
+
+    #Flows 
+    Qmid = mid_flows(Vdot)
+    return Qmid
+end

@@ -22,7 +22,7 @@ function graph_precomputation(g, avg_radii, Len)
     Lp = 120 * 1.83 * 10^(-6) #meters  
     kp = 10 #pascals
     tau = 240 #pascals seconds
-    kappa = 8500.0 # (Pascals) (kappa) nonlinear elastic constant
+    kappa = 1000.0 # (Pascals) (kappa) nonlinear elastic constant
     α = 30.0 # (Pascals) active concentration dynamics parameter
     D = 3.33 * 10^(-10) #m^2 / s
     β = R/(2*96) # (L/s)  production scale 
@@ -51,14 +51,14 @@ function graph_precomputation(g, avg_radii, Len)
     C0 = V0
     Deff = (2 .* Dt) ./ (Len)
 
-    Kp_avg = (pi * mean(avg_radii)^4) / (8 * mu * mean(Len))
-    b = tau - (1/(12*Kp_avg))
+        Kp_avg = (pi * mean(avg_radii)^4) / (8 * mu * mean(Len))
+        b = tau - (1/(12*Kp_avg))
 
-    K = (pi.*avg_radii.^4)./(8*mu.*Len)
-    τ = diagm(0 => vec(b .+ (1 ./ (12*K))))
+        K = (pi.*avg_radii.^4)./(8*mu.*Len)
+        τ = diagm(0 => vec(b .+ (1 ./ (12*K))))
 
-    ϵ_s = 0.47 
-    ϵ_c = 0.05
+    ϵ_s = 0.5 
+    ϵ_c = 0.06
 
     radius_sq = V0 ./ (pi.*Len)
     surface_area = 2 .*pi .*sqrt.(radius_sq) .* Len
@@ -73,12 +73,12 @@ function graph_precomputation(g, avg_radii, Len)
     L = -E*(diagm(0 => vec(K)))*E'
     Ldag = pinv(Array(L))
 
-    Mq = τ - 0.25B'*Ldag*B
+        Mq = τ - 0.25B'*Ldag*B
 
-    # Pre-calculation for simulation speed ups
-    Mq_inv = factorize(Mq)
-    Minv1 = Mq_inv \ ones(Ne)
-    sum_Minv1 = sum(Minv1)
+        # Pre-calculation for simulation speed ups
+        Mq_inv = factorize(Mq)
+        Minv1 = Mq_inv \ ones(Ne)
+        sum_Minv1 = sum(Minv1)
 
     # Modes
     dim = size(Mq)[1]
@@ -155,3 +155,4 @@ function solute_in_out_and_node_conc(Qin,Qout,ce,DeffOUT,DeffIN)
 
     return Jin, Jout, cn, BDeff
 end
+
