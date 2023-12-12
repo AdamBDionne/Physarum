@@ -1,25 +1,22 @@
-#function that defines set of diff eq. for system 
-#given initial condition u 
+# Given some state u, h finds set of diff eq. of system
 function h(du, u, p, t)
-    # Failsafe: if we are in the wrong regime, the solution 
-    # will diverge. This might cause the program to halt,  
-    # so we throw an error if any vessel volume is too large
-    if  sum(abs.(u) .> 5*maximum(V0)) > 0 
+    # Failsafe
+    if sum(abs.(u) .> 5*maximum(V0)) > 0 
         println(t)
-        throw(string("Solution diverges at " ,t))
+        throw(string("Solution unstable at " ,t))
     end
 
     V = u[1:Ne] #volume 
-    Vdot = du[1:Ne] #change in volume 
-    C = u[Ne+1:2Ne] #solute amount 
-    Cdot = du[Ne+1:2Ne] #change in solute amount 
+    C = u[Ne+1:2Ne] #solute amount
+    radius_sq = (V) ./ (pi .* Len)
+    R = sqrt.(radius_sq)
 
     ce = C ./ V #concentration 
-    ϵ = (V .- V0)./V0 #percent change from equilibrium volume
+    ϵ = (R .- R0)./R0 #percent change from equilibrium volume
 
     #Volume dynamics
-                  #  restoring force      nonlinear fudge                 actomyosin contractions 
-    r = Mq_inv \ (-(k .*ϵ .*V0) .- (kappa .* V0 .*(ϵ).^3) .- (surface_area .* α .*(C./C0).*(1 .- ϵ/ϵ_s)))
+                  #  restoring force      nonlinear fudge    actomyosin contractions 
+    r = Mq_inv \ (-(k .*ϵ) .- (kappa .*(ϵ).^3) .- ( α .*(C./C0).*(1 .- ϵ/ϵ_s)))
     μ = sum(r) / sum_Minv1
     Vdot = r .- (Minv1 .* μ)
 
@@ -36,27 +33,36 @@ function h(du, u, p, t)
     Jin, Jout, cn, BDeff = solute_in_out_and_node_conc(Qin, Qout, ce, DeffOUT, DeffIN)
 
     #Concentration dynamics
-            #advection       production (stretch activated)   decay              diffusion 
+            #advection                production              decay              diffusion 
     Cdot = Jin .- Jout .+ (surface_area .* β .*((1 .+ ϵ/ϵ_c) .- ce)) .+ (BDeff *cn) .- (DeffIN .+ DeffOUT).*ce
 
     #Save dynamics
     du .= [Vdot; Cdot]
 end
 
-#find flows given current volumes and concentrations
-function findFlows(u)
-    V = u[1:Ne] #volume 
-    C = u[Ne+1:2Ne] #solute amount 
 
-    ϵ = (V .- V0)./V0 #percent change from equilibrium volume
+#Find flow velocities given some state u
+function findFlows(u)
+    # Failsafe
+    if  sum(abs.(u) .> 5*maximum(V0)) > 0 
+        println(t)
+        throw(string("Solution diverges at " ,t))
+    end
+
+    V = u[1:Ne] #volume 
+    C = u[Ne+1:2Ne] #solute amount
+    radius_sq = (V) ./ (pi .* Len)
+    R = sqrt.(radius_sq)
+
+    ϵ = (R .- R0)./R0 #percent change from equilibrium volume
 
     #Volume dynamics
-                  #  restoring force      nonlinear fudge                 actomyosin contractions 
-    r = Mq_inv \ (-(k .*ϵ .*V0) .- (kappa .* V0 .*(ϵ).^3) .- (surface_area .* α .*(C./C0).*(1 .- ϵ/ϵ_s)))
+                  #  restoring force      nonlinear fudge    actomyosin contractions 
+    r = Mq_inv \ (-(k .*ϵ) .- (kappa .*(ϵ).^3) .- ( α .*(C./C0).*(1 .- ϵ/ϵ_s)))
     μ = sum(r) / sum_Minv1
     Vdot = r .- (Minv1 .* μ)
 
     #Flows 
     Qmid = mid_flows(Vdot)
-    return Qmid
+    return 2*Qmid./(pi.*R.^2)
 end

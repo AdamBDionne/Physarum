@@ -1,35 +1,29 @@
-# Adam Dionne
 # This script saves the data collected from a simulation
 using DelimitedFiles 
 include("fxns/model.jl")
 
-destination = "grid_5x5"
-
-# Sampling
-t_i = 0
-t_f = 60
-fps = 60
+destination = "Data/Sample one/Sample one"
 
 # Save parameters
-params = [α;β;kappa;ϵ_s;ϵ_c;D]
+params = [α[1];β[1];kappa[1];ϵ_s[1];ϵ_c[1];D[1]]
 
-output0 = string(destination,"_PARAMETERS.txt")
-open(output0,"w") do io
+output = string(destination,"_PARAMETERS.txt")
+open(output,"w") do io
     writedlm(io,["params";params;"init";u0])
 end
 
 
 # Save graph edges
-    edgesM = zeros(Int,ne(g),2)
-    for (i,e) in enumerate(edges(g))
-        edgesM[i,1] = src(e)
-        edgesM[i,2] = dst(e)
-    end
+    # edgesM = zeros(Int,ne(g),2)
+    # for (i,e) in enumerate(edges(g))
+    #     edgesM[i,1] = src(e)
+    #     edgesM[i,2] = dst(e)
+    # end
 
-    output1 = string(destination, "_EDGES.txt")
-    open(output1,"w") do io
-        writedlm(io,edgesM)
-    end
+    # output = string(destination, "_EDGES.txt")
+    # open(output,"w") do io
+    #     writedlm(io,edgesM)
+    # end
 
 # Save nodes and their positions 
 # Make sure to change depending on the graph being used 
@@ -44,34 +38,55 @@ end
     # end
 
     # GRID GRAPH
-    #n = 5
-    nodes = zeros(Int,nv(g),3)
-    for i in 1:nv(g)
-        nodes[i,1] = i 
-        nodes[i,2] = mod(i-1,n)
-        nodes[i,3] = floor((i-1)/n)
-    end
+    #     #n = 5
+    #     nodes = zeros(Int,nv(g),3)
+    #     for i in 1:nv(g)
+    #         nodes[i,1] = i 
+    #         nodes[i,2] = mod(i-1,n)
+    #         nodes[i,3] = floor((i-1)/n)
+    #     end
 
-    output2 = string(destination, "_NODES.txt")
-    open(output2,"w") do io
-        writedlm(io,nodes)
-    end
+# output = string(destination, "_NODES.txt")
+# open(output,"w") do io
+#     writedlm(io,nodes)
+# end
+
 
 
 # Save solution for animation
+numFrames = fps*(t_f-t_i)
+odeSol = [sol(t_i+(i/fps)) for i in 1:numFrames]
 
-odeSol = [sol(t_i+(i/fps)) for i in 1:fps*(t_f-t_i)]
+temp = zeros(numFrames,2Ne)
+for i = 1:numFrames
+    temp[i,:] = odeSol[i]
+end
 
-output3 = string(destination, "_ODE_SOL.txt")
-open(output3,"w") do io
+#Find R/avg{R} 
+for i = 1:Ne
+    curr_sig = temp[:,i]
+    curr_sig = sqrt.(curr_sig ./ (pi .* Len[i]))
+    temp[:,i] = curr_sig  ./ mean(curr_sig)
+end
+#Find C/avg{C}
+for i = Ne+1:2Ne
+    curr_sig = temp[:,i]
+    temp[:,i] = curr_sig  ./ mean(curr_sig)
+end
+for i = 1:numFrames
+    odeSol[i] = temp[i,:]
+end
+
+output = string(destination, "_ODE_SOL.txt")
+open(output,"w") do io
     writedlm(io,odeSol)
 end
 
 # Save flows
 flows = [findFlows(sol(t_i+(i/fps))) for i in 1:fps*(t_f-t_i)]
 
-output4 = string(destination, "_FLOWS.txt")
-open(output4,"w") do io
+output = string(destination, "_FLOWS.txt")
+open(output,"w") do io
     writedlm(io,flows)
 end
 
